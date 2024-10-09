@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JoJo FlashCardz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #E6F3FF;
+        }
+        #app {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #2C3E50;
+            margin-top: 0;
+        }
+        #jojo-header {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+        #flashcard {
+            margin-bottom: 1rem;
+        }
+        #question {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        #plant-image {
+            max-width: 300px;
+            max-height: 300px;
+            margin-bottom: 1rem;
+        }
+        #answer-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498DB;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #2980B9;
+        }
+        #feedback-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        #jojo-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+        #feedback {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <img id="jojo-header" src="jojo.jpg" alt="Jojo Header">
+        <h1>JoJo FlashCardz</h1>
+        <div id="flashcard">
+            <p id="question"></p>
+            <img id="plant-image" style="display: none;">
+            <input type="text" id="answer-input" placeholder="Your answer">
+            <button id="submit-btn">Submit</button>
+        </div>
+        <div id="feedback-container">
+            <img id="jojo-icon" src="jojo2.jpg" alt="Jojo Icon" style="display: none;">
+            <div id="feedback"></div>
+        </div>
+        <button id="next-btn" style="display: none;">Next</button>
+    </div>
+
+    <script>
+        // Flashcard data
+        const plantsData = `
+1. Brassicaceae
+- Brassica
+- rapa
+Common name: Turnip
+
+2. Fabaceae
+- Phaseolus
+- vulgaris
+Common name: Common bean
+
+3. Solanaceae
+- Solanum
+- lycopersicum
+Common name: Tomato
+
+4. Cucurbitaceae
+- Cucurbita
+- pepo
+Common name: Pumpkin
+
+5. Asteraceae
+- Lactuca
+- sativa
+Common name: Lettuce
+
+6. Apiaceae
+- Daucus
+- carota
+Common name: Carrot
+
+7. Alliaceae
+- Allium
+- cepa
+Common name: Onion
+
+8. Poaceae
+- Zea
+- mays
+Common name: Corn
+
+9. Rosaceae
+- Fragaria
+- ananassa
+Common name: Strawberry
+
+10. Vitaceae
+- Vitis
+- vinifera
+Common name: Grape
+
+11. Rutaceae
+- Citrus
+- sinensis
+Common name: Orange
+
+12. Malvaceae
+- Theobroma
+- cacao
+Common name: Cacao
+
+13. Rubiaceae
+- Coffea
+- arabica
+Common name: Coffee
+
+14. Musaceae
+- Musa
+- acuminata
+Common name: Banana
+        `;
+
+        let flashcards = [];
+        let currentFlashcardIndex = 0;
+
+        function cleanText(text) {
+            return text.replace(/^\d+\.?\s*|\*|-/g, '').trim();
+        }
+
+        function createFlashcards() {
+            const plants = plantsData.trim().split('\n\n');
+            flashcards = [];
+
+            plants.forEach((plant, index) => {
+                const lines = plant.split('\n');
+                if (lines.length < 3) return;
+
+                const family = cleanText(lines[0]);
+                const genus = cleanText(lines[1]);
+                const species = cleanText(lines[2]);
+                const commonName = lines[3] ? cleanText(lines[3].split(':')[1]) : null;
+
+                flashcards.push(
+                    {question: `What is the family of the plant ${genus} ${species}?`, answer: family, imageIndex: index + 1},
+                    {question: `What is the genus of the plant in the family ${family} with species ${species}?`, answer: genus, imageIndex: index + 1},
+                    {question: `What is the species name of the plant in the genus ${genus}?`, answer: species, imageIndex: index + 1},
+                    {question: `Look at this plant image. What is its family?`, answer: family, imageIndex: index + 1},
+                    {question: `Look at this plant image. What is its genus?`, answer: genus, imageIndex: index + 1},
+                    {question: `Look at this plant image. What is its species?`, answer: species, imageIndex: index + 1}
+                );
+
+                if (commonName) {
+                    flashcards.push(
+                        {question: `What is the common name of ${genus} ${species}?`, answer: commonName, imageIndex: index + 1},
+                        {question: `What is the scientific name of the plant commonly known as ${commonName}?`, answer: `${genus} ${species}`, imageIndex: index + 1},
+                        {question: `Look at this plant image. What is its common name?`, answer: commonName, imageIndex: index + 1}
+                    );
+                }
+            });
+
+            shuffleArray(flashcards);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function showFlashcard() {
+            const flashcard = flashcards[currentFlashcardIndex];
+            document.getElementById('question').textContent = flashcard.question;
+            
+            const plantImage = document.getElementById('plant-image');
+            if (flashcard.question.includes("Look at this plant image")) {
+                plantImage.src = `${flashcard.imageIndex}.jpg`;
+                plantImage.style.display = 'block';
+            } else {
+                plantImage.style.display = 'none';
+            }
+            
+            document.getElementById('answer-input').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('jojo-icon').style.display = 'none';
+            document.getElementById('submit-btn').style.display = 'inline-block';
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer-input').value.trim().toLowerCase();
+            const correctAnswer = flashcards[currentFlashcardIndex].answer.toLowerCase();
+            
+            const feedbackElement = document.getElementById('feedback');
+            const jojoIcon = document.getElementById('jojo-icon');
+            
+            jojoIcon.style.display = 'inline-block';
+            
+            if (userAnswer === correctAnswer) {
+                feedbackElement.textContent = "Correct! Gud Job!";
+                feedbackElement.style.color = 'green';
+            } else {
+                feedbackElement.textContent = `Wrong! The correct answer is: ${flashcards[currentFlashcardIndex].answer}`;
+                feedbackElement.style.color = 'red';
+            }
+            
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'inline-block';
+        }
+
+        function nextFlashcard() {
+            currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcards.length;
+            showFlashcard();
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', checkAnswer);
+        document.getElementById('next-btn').addEventListener('click', nextFlashcard);
+
+        // Initialize the app
+        createFlashcards();
+        showFlashcard();
+    </script>
+</body>
+</html>
